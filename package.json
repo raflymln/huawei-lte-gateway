@@ -16,6 +16,8 @@
         }
     ],
     "scripts": {
+        "dev": "bun run build && bun run start",
+        "start": "bun run dist/main.js",
         "build": "tsc",
         "typecheck": "tsc --noEmit",
         "lint": "eslint . --ext .ts",
