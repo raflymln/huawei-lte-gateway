@@ -81,12 +81,9 @@ jobs:
                   git push origin "v$VERSION" --force
 
             - name: Publish GitHub Release
-              uses: ncipollo/release-action@v1
-              with:
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  generateReleaseNotes: true
-                  tag: "v${{ github.run_number }}"
-                  name: "Release v${{ github.run_number }}"
+              run: |
+                  VERSION=$(jq -r '.version' package.json)
+                  gh release create "v$VERSION" --generate-notes
                   body: |
                       ## Docker Images
 
