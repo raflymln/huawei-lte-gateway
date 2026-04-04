@@ -74,7 +74,24 @@ async function getAuth(): Promise<SessionToken> {
 app.get("/health", async (c) => {
     try {
         const res = await fetch(`${MODEM_URL}/monitoring/status`);
-        const obj = parser.parse(await res.text());
+
+        if (!res.ok) {
+            return c.json<HealthResponse>({
+                status: "offline",
+                error: `HTTP ${res.status}: ${res.statusText}`,
+            });
+        }
+
+        const text = await res.text();
+        const obj = parser.parse(text);
+
+        if (!obj.response) {
+            return c.json<HealthResponse>({
+                status: "offline",
+                error: "Invalid response: missing response object",
+            });
+        }
+
         const status = obj.response;
 
         return c.json<HealthResponse>({
@@ -84,7 +101,7 @@ app.get("/health", async (c) => {
             is_connected: status.ConnectionStatus === "901",
         });
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : String(err);
         return c.json<HealthResponse>({ status: "offline", error: message }, 500);
     }
 });
@@ -115,7 +132,7 @@ app.post("/sms/send", async (c) => {
 
         return c.json<SendSmsResponse>({ success });
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : String(err);
         return c.json<SendSmsResponse>({ success: false, error: message }, 500);
     }
 });
@@ -135,11 +152,11 @@ app.get("/sms/inbox", async (c) => {
         });
 
         const obj = parser.parse(await res.text());
-        const messages = obj.response.Messages?.Message ?? [];
+        const messages = obj.response?.Messages?.Message ?? [];
 
         return c.json<SmsInboxResponse>(Array.isArray(messages) ? messages : [messages]);
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : String(err);
         return c.json<{ error: string }>({ error: message }, 500);
     }
 });
@@ -170,9 +187,9 @@ app.post("/ussd", async (c) => {
         const res = await fetch(`${MODEM_URL}/ussd/get`);
         const obj = parser.parse(await res.text());
 
-        return c.json<UssdResponse>({ content: obj.response.Content });
+        return c.json<UssdResponse>({ content: obj.response?.Content ?? "" });
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : String(err);
         return c.json<UssdResponse>({ content: "", error: message }, 500);
     }
 });
@@ -193,9 +210,9 @@ app.get("/contacts", async (c) => {
 
         const obj = parser.parse(await res.text());
 
-        return c.json<ContactsResponse>(obj.response.Phonebook?.PbItem ?? []);
+        return c.json<ContactsResponse>(obj.response?.Phonebook?.PbItem ?? []);
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
+        const message = err instanceof Error ? err.message : String(err);
         return c.json<{ error: string }>({ error: message }, 500);
     }
 });
