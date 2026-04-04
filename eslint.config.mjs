@@ -62,7 +62,7 @@ export default defineConfig([
                 "error",
                 {
                     allowSameFolder: false,
-                    rootDir: "src",
+                    rootDir: ".",
                     prefix: "@",
                 },
             ],

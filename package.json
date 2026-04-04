@@ -21,7 +21,7 @@
         "build": "tsc",
         "typecheck": "tsc --noEmit",
         "lint": "eslint . --ext .ts",
-        "test": "bun test",
+        "test": "bun run build && bun test",
         "format": "prettier --write .",
         "commitlint": "commitlint --edit",
         "prepare": "lefthook install"

@@ -4,4 +4,4 @@ import { UssdController } from "@/controllers/api/ussd.js";
 
 import { Elysia } from "elysia";
 
-export const APIController = new Elysia({ prefix: "/api/v1", tags: ["API"] }).use(SMSController).use(UssdController).use(ContactsController);
+export const APIController = new Elysia({ prefix: "/api", tags: ["API"] }).use(SMSController).use(UssdController).use(ContactsController);
