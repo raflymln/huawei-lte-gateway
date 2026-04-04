@@ -2,6 +2,8 @@
 
 Service gateway for interacting with Huawei LTE Modem web API endpoints. Built with Hono for fast routing and communication handling.
 
+> **Note**: Tested on Huawei E3372H-607. Other models may work but are not guaranteed.
+
 ## Features
 
 - **Healthcheck** (`/health`): Checks modem connection status and signal strength
@@ -13,11 +15,7 @@ Service gateway for interacting with Huawei LTE Modem web API endpoints. Built w
 ## Quick Deploy
 
 ```bash
-# One-liner install
 curl -fsSL https://raw.githubusercontent.com/raflymln/huawei-lte-gateway/main/install.sh | bash
-
-# Or manually create compose.yml and run
-podman compose up -d
 ```
 
 ## Deployment
@@ -25,6 +23,7 @@ podman compose up -d
 ### Prerequisites
 
 - Podman or Docker
+- Huawei LTE modem (tested on E3372H-607)
 
 ### Environment Variables
 
@@ -36,14 +35,7 @@ podman compose up -d
 ### Run with Podman
 
 ```bash
-# Pull latest image
-podman pull ghcr.io/raflymln/huawei-lte-gateway:latest
-
-# Start
 podman compose up -d
-
-# Update
-podman compose pull && podman compose up -d
 ```
 
 ## Local Development
@@ -72,14 +64,9 @@ All requests (except `/health`) require session and token authentication, automa
 | POST   | `/ussd`      | Send USSD code (`{ code }`)   |
 | GET    | `/contacts`  | Get SIM card contacts         |
 
-## Development Scripts
+## Contributing
 
-```bash
-bun run typecheck  # TypeScript type checking
-bun run lint       # ESLint
-bun run format     # Prettier formatting
-bun run test       # Run tests
-```
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and contribution guidelines.
 
 ## License
 

@@ -1,67 +1,46 @@
 # Agents
 
-Documentation for AI agents working on this project.
+## Quick Reference
 
-## Project Overview
-
-- **Type**: Service gateway for Huawei LTE Modem web API
-- **Stack**: Bun, TypeScript, Hono, Podman
-- **Target**: Orange Pi Zero 3 (ARM64)
-
-## Tech Stack
-
-- **Runtime**: Bun 1.x
-- **Framework**: Hono
-- **Language**: TypeScript 6
-- **Linting**: ESLint 9 + typescript-eslint
-- **Testing**: Bun test
-- **Container**: Podman/Docker with multi-arch (ARM64, AMD64)
-- **CI/CD**: GitHub Actions
+| Item      | Value                        |
+| --------- | ---------------------------- |
+| Runtime   | Bun 1.x                      |
+| Framework | Hono                         |
+| Language  | TypeScript 6                 |
+| Container | Podman/Docker (ARM64, AMD64) |
+| License   | MPL-2.0                      |
 
 ## Commands
 
 ```bash
-bun run build      # Build TypeScript to dist/
-bun run typecheck  # TypeScript type checking
-bun run lint       # ESLint
-bun run test       # Run tests
-bun run format     # Prettier formatting
-bun run commitlint # Validate commit messages
+bun run build       # Build
+bun run typecheck   # Type check
+bun run lint        # Lint
+bun run test        # Tests
+bun run format      # Format
 ```
 
-## Development
+## Files
 
-1. Install dependencies: `bun install`
-2. Build: `bun run build`
-3. Run locally: `bun run dev` (or use Podman)
-
-## Deployment
-
-```bash
-# Via install script
-curl -fsSL https://raw.githubusercontent.com/raflymln/huawei-lte-gateway/main/install.sh | bash
-
-# Via Podman
-podman compose up -d
-```
-
-## Architecture
-
-- `src/main.ts` - Main application with routes
-- `src/__tests__/` - Unit tests
-- `Dockerfile` - Multi-stage Alpine build
-- `compose.yml` - Gateway container
+| File                 | Purpose                 |
+| -------------------- | ----------------------- |
+| `src/main.ts`        | Main application        |
+| `src/__tests__/`     | Unit tests              |
+| `Dockerfile`         | Container build         |
+| `docker-compose.yml` | Container orchestration |
+| `package.json`       | Dependencies & scripts  |
+| `tsconfig.json`      | TypeScript config       |
 
 ## Code Style
 
 - English comments only
 - TypeScript strict mode
-- ESLint + Prettier enforced via lefthook
-- Conventional commits required
+- ESLint + Prettier via lefthook
+- Conventional commits
 
-## Environment Variables
+## Environment
 
-| Variable    | Default                  | Description   |
-| ----------- | ------------------------ | ------------- |
-| `PORT`      | `3000`                   | Service port  |
-| `MODEM_URL` | `http://192.168.8.1/api` | Modem API URL |
+| Variable    | Default                  |
+| ----------- | ------------------------ |
+| `PORT`      | `3000`                   |
+| `MODEM_URL` | `http://192.168.8.1/api` |

@@ -9,7 +9,7 @@ on:
             - "package.json"
             - "tsconfig.json"
             - "Dockerfile"
-            - "compose.yml"
+            - "docker-compose.yml"
     workflow_dispatch:
 
 env:
