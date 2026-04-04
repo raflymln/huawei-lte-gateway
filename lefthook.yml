@@ -1,0 +1,8 @@
+pre-commit:
+  commands:
+    lint:
+      run: bun run eslint main.js
+    prettier:
+      run: bunx prettier --check main.js
+    commitlint:
+      run: bun run commitlint --edit

@@ -1,0 +1,5 @@
+*.lockbin binary=true
+*.wasm binary=true
+package.json linguist-text=false
+package-lock.json linguist-text=false
+bun.lock linguist-text=false
