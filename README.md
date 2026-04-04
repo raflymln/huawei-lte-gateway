@@ -63,7 +63,7 @@ bun run test     # Run tests with mocked modem API
 
 ## API Reference
 
-Interactive API documentation available at `/scalar/` when running.
+Interactive API documentation available at `/` when running.
 
 Base URL: `http://localhost:3000`
 
