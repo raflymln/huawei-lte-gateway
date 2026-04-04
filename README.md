@@ -1,21 +1,27 @@
 # Huawei LTE Gateway Service
 
-Service gateway for interacting with Huawei LTE Modem web API endpoints. Built with Hono for fast routing and communication handling.
+Service gateway for interacting with Huawei LTE Modem web API endpoints. Built with ElysiaJS for high performance and type-safe routing.
 
 > **Note**: Tested on Huawei E3372H-607. Other models may work but are not guaranteed.
 
 ## Features
 
-- **Healthcheck** (`/health`): Checks modem connection status and signal strength
-- **SMS Sending** (`/sms/send`): Sends SMS messages via modem API
-- **SMS Inbox** (`/sms/inbox`): Fetches latest received SMS messages
-- **USSD/Balance Check** (`/ussd`): Sends USSD codes and retrieves responses
-- **Contacts** (`/contacts`): Fetches contacts stored on the SIM card
+- **Healthcheck** (`/health/`): Checks modem connection status and signal strength
+- **SMS Sending** (`/api/sms/send/`): Sends SMS messages via modem API
+- **SMS Inbox** (`/api/sms/inbox/`): Fetches latest received SMS messages
+- **USSD/Balance Check** (`/api/ussd/`): Sends USSD codes and retrieves responses
+- **Contacts** (`/api/contacts/`): Fetches contacts stored on the SIM card
 
 ## Quick Deploy
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/raflymln/huawei-lte-gateway/main/install.sh | bash
+# Pull and run the latest release
+podman run -d \
+  --name huawei-gateway \
+  -p 3000:3000 \
+  -e PORT=3000 \
+  -e MODEM_URL=http://192.168.8.1/api \
+  ghcr.io/raflymln/huawei-lte-gateway:latest
 ```
 
 ## Deployment
@@ -38,31 +44,44 @@ curl -fsSL https://raw.githubusercontent.com/raflymln/huawei-lte-gateway/main/in
 podman compose up -d
 ```
 
+### Docker Image
+
+| Tag                                          | Description           |
+| -------------------------------------------- | --------------------- |
+| `ghcr.io/raflymln/huawei-lte-gateway:latest` | Latest stable release |
+| `ghcr.io/raflymln/huawei-lte-gateway:1.0.0`  | Specific version      |
+| `ghcr.io/raflymln/huawei-lte-gateway:<sha>`  | Commit SHA            |
+
 ## Local Development
 
 ```bash
 bun install
 bun run build
 bun run dev
+bun run test     # Run tests with mocked modem API
 ```
 
 ## API Reference
 
-Base URL: `http://192.168.8.1/api`
+Interactive API documentation available at `/scalar/` when running.
+
+Base URL: `http://localhost:3000`
 
 ### Authentication
 
-All requests (except `/health`) require session and token authentication, automatically fetched from the modem's webserver.
+All requests (except `/health/`) require session and token authentication, automatically fetched from the modem's webserver.
 
 ### Endpoints
 
-| Method | Endpoint     | Description                   |
-| ------ | ------------ | ----------------------------- |
-| GET    | `/health`    | Check modem status and signal |
-| POST   | `/sms/send`  | Send SMS (`{ to, message }`)  |
-| GET    | `/sms/inbox` | Get latest SMS messages       |
-| POST   | `/ussd`      | Send USSD code (`{ code }`)   |
-| GET    | `/contacts`  | Get SIM card contacts         |
+| Method | Endpoint                | Description                       |
+| ------ | ----------------------- | --------------------------------- |
+| GET    | `/health/`              | Check modem status and signal     |
+| POST   | `/api/sms/send/`        | Send SMS (`{ to, message }`)      |
+| GET    | `/api/sms/inbox/`       | Get latest SMS messages           |
+| POST   | `/api/sms/inbox/`       | Delete SMS by index (`{ index }`) |
+| GET    | `/api/sms/inbox/:phone` | Get SMS by phone number           |
+| POST   | `/api/ussd/`            | Send USSD code (`{ code }`)       |
+| GET    | `/api/contacts/`        | Get SIM card contacts             |
 
 ## Contributing
 
