@@ -2,8 +2,9 @@ FROM oven/bun:1-alpine AS builder
 
 WORKDIR /app
 
+RUN apk add --no-cache git && git init
 COPY package.json bun.lock ./
-RUN apk add --no-cache git && bun install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 COPY . .
 RUN bun run build
