@@ -1,41 +1,86 @@
 # Huawei LTE Gateway Service
 
-This project implements a service gateway for interacting with a Huawei LTE Modem's web API endpoints. It utilizes Hono for fast routing and communication handling.
+Service gateway for interacting with Huawei LTE Modem web API endpoints. Built with Hono for fast routing and communication handling.
 
 ## Features
 
-- Healthcheck endpoint (`/health`): Checks modem connection status and signal strength.
-- SMS Sending (`/sms/send`): Sends SMS messages by authenticating with the modem API.
-- SMS Inbox Retrieval (`/sms/inbox`): Fetches the latest received SMS messages.
-- USSD/Balance Check (`/ussd`): Sends USSD codes and retrieves the response.
-- Contact Retrieval (`/contacts`): Fetches contacts stored on the SIM card.
+- **Healthcheck** (`/health`): Checks modem connection status and signal strength
+- **SMS Sending** (`/sms/send`): Sends SMS messages via modem API
+- **SMS Inbox** (`/sms/inbox`): Fetches latest received SMS messages
+- **USSD/Balance Check** (`/ussd`): Sends USSD codes and retrieves responses
+- **Contacts** (`/contacts`): Fetches contacts stored on the SIM card
 
-## Setup and Installation
+## Quick Deploy
 
-1.  **Install Dependencies:**
-    ```bash
-    npm install
-    ```
-2.  **Run Locally:**
-    ```bash
-    npm run dev
-    ```
-    The service will start on `http://localhost:3000`.
+```bash
+# One-liner install
+curl -fsSL https://raw.githubusercontent.com/raflymln/huawei-lte-gateway/main/install.sh | bash
 
-## API Details
+# Or manually create compose.yml and run
+podman compose up -d
+```
 
-All endpoints communicate with the modem at the following base URL: `http://192.168.8.1/api`.
+## Deployment
 
-**Note on Authentication:**
-The service relies on fetching session tokens and verification tokens from the modem's webserver endpoint, which must be accessible from the gateway host.
+### Prerequisites
 
-## Development Workflow
+- Podman or Docker
 
-This repository enforces standard development best practices:
+### Environment Variables
 
-- **Linting:** ESLint will check code quality.
-- **Pre-commit Hooks:** Git hooks managed by `lefthook` and `commitlint` ensure every commit message follows the Conventional Commits standard.
+| Variable    | Default                  | Description          |
+| ----------- | ------------------------ | -------------------- |
+| `PORT`      | `3000`                   | Service port         |
+| `MODEM_URL` | `http://192.168.8.1/api` | Huawei modem API URL |
+
+### Run with Podman
+
+```bash
+# Pull latest image
+podman pull ghcr.io/raflymln/huawei-lte-gateway:latest
+
+# Start
+podman compose up -d
+
+# Update
+podman compose pull && podman compose up -d
+```
+
+## Local Development
+
+```bash
+bun install
+bun run build
+bun run dev
+```
+
+## API Reference
+
+Base URL: `http://192.168.8.1/api`
+
+### Authentication
+
+All requests (except `/health`) require session and token authentication, automatically fetched from the modem's webserver.
+
+### Endpoints
+
+| Method | Endpoint     | Description                   |
+| ------ | ------------ | ----------------------------- |
+| GET    | `/health`    | Check modem status and signal |
+| POST   | `/sms/send`  | Send SMS (`{ to, message }`)  |
+| GET    | `/sms/inbox` | Get latest SMS messages       |
+| POST   | `/ussd`      | Send USSD code (`{ code }`)   |
+| GET    | `/contacts`  | Get SIM card contacts         |
+
+## Development Scripts
+
+```bash
+bun run typecheck  # TypeScript type checking
+bun run lint       # ESLint
+bun run format     # Prettier formatting
+bun run test       # Run tests
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MPL-2.0 - Rafly Maulana (rafly@tako.id)
