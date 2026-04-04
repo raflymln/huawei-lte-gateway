@@ -16,7 +16,7 @@
 bun run build       # Build
 bun run typecheck   # Type check
 bun run lint        # Lint
-bun run test        # Tests
+bun run test        # Tests (with mock modem API)
 bun run format      # Format
 ```
 
@@ -34,8 +34,10 @@ bun run format      # Format
 | `src/controllers/api/sms.ts`      | SMS endpoints                      |
 | `src/controllers/api/ussd.ts`     | USSD endpoints                     |
 | `src/controllers/api/contacts.ts` | Contacts endpoints                 |
-| `src/types.d.ts`                  | Environment type definitions       |
 | `src/__tests__/`                  | Unit tests                         |
+| `src/__tests__/mock.ts`           | Mock modem API for tests           |
+| `src/__tests__/api.test.ts`       | API endpoint tests                 |
+| `src/__tests__/utils.test.ts`     | Utility function tests             |
 | `Dockerfile`                      | Container build                    |
 | `docker-compose.yml`              | Container orchestration            |
 | `package.json`                    | Dependencies & scripts             |
@@ -63,6 +65,27 @@ export const Controller = new Elysia({ prefix: "/path", tags: ["Tag"] })
     .post("/action", handler, { body: Schema, detail: {...} })
     .get("/list", handler);
 ```
+
+## API Routes
+
+| Method | Path                    | Description              |
+| ------ | ----------------------- | ------------------------ |
+| GET    | `/health/`              | Health check             |
+| POST   | `/api/sms/send/`        | Send SMS message         |
+| GET    | `/api/sms/inbox/`       | Get SMS inbox and outbox |
+| GET    | `/api/sms/inbox/:phone` | Get SMS by phone number  |
+| POST   | `/api/ussd/`            | Send USSD code           |
+| GET    | `/api/contacts/`        | Get contacts list        |
+
+## Testing
+
+Tests use a mock modem API to avoid real modem dependency:
+
+```bash
+bun run test  # Runs build + tests with mocked modem
+```
+
+The mock (`src/__tests__/mock.ts`) intercepts all fetch calls to modem endpoints and returns fake responses.
 
 ## Environment
 
