@@ -1,8 +1,13 @@
 pre-commit:
-  commands:
-    lint:
-      run: bun run eslint main.js
-    prettier:
-      run: bunx prettier --check main.js
-    commitlint:
-      run: bun run commitlint --edit
+    commands:
+        typecheck:
+            run: bun run typecheck
+        lint:
+            run: bun run lint
+        format:
+            run: bun run format
+
+commit-msg:
+    commands:
+        commitlint:
+            run: bun run commitlint --edit

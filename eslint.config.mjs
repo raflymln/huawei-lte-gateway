@@ -1,44 +1,92 @@
 import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import prettier from "eslint-plugin-prettier/recommended";
+import { defineConfig } from "eslint/config";
+import importPlugin from "eslint-plugin-import";
 import noRelativeImports from "eslint-plugin-no-relative-import-paths";
+import prettier from "eslint-plugin-prettier/recommended";
+import tseslint from "typescript-eslint";
 
-export default tseslint.config(js.configs.recommended, tseslint.configs.recommended, prettier, {
-    ignores: ["**/node_modules/**", "**/dist/**", "**/*.d.ts"],
-    languageOptions: {
-        parser: tseslint.parser,
-        parserOptions: {
-            ecmaFeatures: { jsx: false },
-            ecmaVersion: 2020,
-            sourceType: "module",
+export default defineConfig([
+    {
+        ignores: ["**/node_modules/**", "**/dist/**", "**/*.d.ts", "**/.agents/**", "**/.claude/**", "commitlint.config.ts"],
+    },
+    prettier,
+    js.configs.recommended,
+    ...tseslint.configs.recommended,
+    {
+        files: ["**/*.{js,jsx,ts,tsx}"],
+        plugins: {
+            import: importPlugin,
+            "no-relative-import-paths": noRelativeImports,
+        },
+        settings: {
+            "import/resolver": {
+                typescript: {},
+            },
+        },
+        rules: {
+            "no-multi-spaces": "error",
+            "no-empty-function": "off",
+            "prettier/prettier": "error",
+            eqeqeq: ["error", "always"],
+            "no-case-declarations": "error",
+            "no-confusing-arrow": "error",
+            "no-else-return": "error",
+            "no-var": "error",
+            "object-shorthand": ["error", "always"],
+            "prefer-arrow-callback": "error",
+            "prefer-const": "error",
+            "prefer-template": "error",
+            "spaced-comment": ["error", "always"],
+            yoda: "error",
+
+            // Import
+            "import/no-duplicates": "error",
+            "import/no-absolute-path": "error",
+            "import/no-namespace": "error",
+            "import/first": "error",
+            "import/no-anonymous-default-export": "error",
+            "import/order": [
+                "error",
+                {
+                    "newlines-between": "always",
+                    groups: ["type", "index", "sibling", "parent", "internal", "external", "builtin", "object"],
+                    alphabetize: {
+                        order: "asc",
+                        caseInsensitive: true,
+                    },
+                },
+            ],
+
+            // No relative imports
+            "no-relative-import-paths/no-relative-import-paths": [
+                "error",
+                {
+                    allowSameFolder: false,
+                    rootDir: "src",
+                    prefix: "@",
+                },
+            ],
+
+            // TypeScript
+            "@typescript-eslint/no-restricted-types": "error",
+            "@typescript-eslint/no-extra-non-null-assertion": "error",
+            "@typescript-eslint/no-import-type-side-effects": "error",
+            "@typescript-eslint/consistent-indexed-object-style": ["error", "record"],
+            "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+            "@typescript-eslint/consistent-type-imports": [
+                "error",
+                {
+                    prefer: "type-imports",
+                    disallowTypeAnnotations: true,
+                    fixStyle: "separate-type-imports",
+                },
+            ],
+            "@typescript-eslint/array-type": [
+                "error",
+                {
+                    default: "array",
+                },
+            ],
         },
     },
-    plugins: {
-        "no-relative-import-paths": noRelativeImports,
-    },
-    rules: {
-        "no-console": "warn",
-        "no-unused-vars": "warn",
-        "no-var": "error",
-        "prefer-const": "error",
-        "import/no-duplicates": "error",
-        "import/no-absolute-path": "error",
-        "import/no-namespace": "error",
-        "import/order": [
-            "error",
-            {
-                groups: ["builtin", "external", "internal"],
-                newlinesBetween: "always",
-                alphabetize: { order: "asc", caseInsensitive: true },
-            },
-        ],
-        "no-relative-import-paths/no-relative-import-paths": [
-            "error",
-            {
-                allowSameFolder: false,
-                rootDir: "src",
-                prefix: "@",
-            },
-        ],
-    },
-});
+]);
