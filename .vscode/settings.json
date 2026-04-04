@@ -1,0 +1,28 @@
+{
+    // Editor
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+
+    // Files
+    "files.eol": "\n",
+    "files.associations": {
+        ".env{.*}?": "env",
+        ".dockerignore": "ignore"
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/app/api/**": true
+    },
+
+    // JS / TS Project Configuration
+    "js/ts.tsdk.path": "node_modules\\typescript\\lib",
+
+    // ESLint
+    "eslint.validate": ["html", "javascript", "typescript", "javascriptreact", "typescriptreact"]
+}
