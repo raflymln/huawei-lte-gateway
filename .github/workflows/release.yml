@@ -81,9 +81,30 @@ jobs:
                   git push origin "v$VERSION" --force
 
             - name: Publish GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   VERSION=$(jq -r '.version' package.json)
-                  gh release create "v$VERSION" --generate-notes
+                  gh release create "v$VERSION" --generate-notes -F - <<'EOF'
+                  ## Docker Images
+
+                  Available images:
+                  - `ghcr.io/${{ github.repository }}:latest` (latest release)
+                  - `ghcr.io/${{ github.repository }}:${{ github.sha }}` (commit SHA)
+
+                  ### Example compose
+
+                  ```yaml
+                  services:
+                      gateway:
+                          image: ghcr.io/${{ github.repository }}:latest
+                          environment:
+                              - PORT=3000
+                              - MODEM_URL=http://192.168.8.1/api
+                          ports:
+                              - "3000:3000"
+                  ```
+                  EOF
                   body: |
                       ## Docker Images
 
