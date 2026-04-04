@@ -1,165 +1,178 @@
-import { describe, it, expect } from "bun:test";
-import { XMLParser } from "fast-xml-parser";
+import { parseXml } from "@/lib/utils.js";
 
-const parser = new XMLParser({ ignoreAttributes: false });
+import { describe, expect, it } from "bun:test";
 
-describe("XML Parser", () => {
-    it("should parse simple XML response", () => {
-        const xml = `<response><SesInfo>Session123</SesInfo><TokInfo>Token456</TokInfo></response>`;
-        const result = parser.parse(xml);
+describe("Utils", () => {
+    describe("parseXml", () => {
+        it("should parse auth response", () => {
+            const xml = `<response><SesInfo>Session123</SesInfo><TokInfo>Token456</TokInfo></response>`;
+            const result = parseXml(xml);
 
-        expect(result.response.SesInfo).toBe("Session123");
-        expect(result.response.TokInfo).toBe("Token456");
+            expect(result.response).toBeDefined();
+            expect(result.response?.SesInfo).toBe("Session123");
+            expect(result.response?.TokInfo).toBe("Token456");
+        });
+
+        it("should parse error response", () => {
+            const xml = `<error><code>125003</code><message>Action Failed</message></error>`;
+            const result = parseXml(xml);
+
+            expect(result.error).toBeDefined();
+            expect(result.error?.code).toBe(125003);
+        });
+
+        it("should parse SMS inbox response", () => {
+            const xml = `<?xml version="1.0" encoding="UTF-8"?><response><Messages><Message><Index>1</Index><Phone>+6281234567890</Phone><Content>Test</Content><Date>2024-01-01 12:00:00</Date></Message></Messages></response>`;
+            const result = parseXml(xml);
+
+            expect((result.response as Record<string, unknown>)?.Messages).toBeDefined();
+        });
+
+        it("should parse contacts response", () => {
+            const xml = `<?xml version="1.0" encoding="UTF-8"?><response><Phonebook><PbItem><Tel>+6281234567890</Tel><Name>John</Name></PbItem></Phonebook></response>`;
+            const result = parseXml(xml);
+
+            expect((result.response as Record<string, unknown>)?.Phonebook).toBeDefined();
+        });
+
+        it("should parse health status response", () => {
+            const xml = `<response><SignalIcon>5</SignalIcon><CurrentNetworkType>19</CurrentNetworkType><ConnectionStatus>901</ConnectionStatus></response>`;
+            const result = parseXml(xml);
+
+            expect((result.response as Record<string, unknown>)?.SignalIcon).toBe(5);
+            expect((result.response as Record<string, unknown>)?.CurrentNetworkType).toBe(19);
+            expect((result.response as Record<string, unknown>)?.ConnectionStatus).toBe(901);
+        });
     });
 
-    it("should parse nested XML elements", () => {
-        const xml = `<response><Messages><Message><Index>1</Index><Phone>+6281234567890</Phone><Content>Test message</Content></Message></Messages></response>`;
-        const result = parser.parse(xml);
+    describe("SMS normalization", () => {
+        it("should normalize SMS message fields", () => {
+            const raw = {
+                Index: "123",
+                Phone: "+6281234567890",
+                Content: "Test message",
+                Date: "2024-01-01 12:00:00",
+                smstat: 1,
+            };
 
-        expect(result.response.Messages.Message.Index).toBe(1);
-        expect(result.response.Messages.Message.Content).toBe("Test message");
+            const normalized = {
+                index: typeof raw.Index === "string" ? parseInt(raw.Index, 10) : Number(raw.Index) || 0,
+                phone: String(raw.Phone ?? ""),
+                content: String(raw.Content ?? ""),
+                date: String(raw.Date ?? ""),
+                smstat: Number(raw.smstat),
+                sca: String(""),
+                saveType: Number(undefined),
+                priority: Number(undefined),
+                smsType: Number(undefined),
+            };
+
+            expect(normalized.index).toBe(123);
+            expect(normalized.phone).toBe("+6281234567890");
+            expect(normalized.content).toBe("Test message");
+            expect(normalized.smstat).toBe(1);
+        });
+
+        it("should handle numeric Index values", () => {
+            const raw = { Index: 456 };
+
+            const index = typeof raw.Index === "string" ? parseInt(raw.Index, 10) : Number(raw.Index) || 0;
+
+            expect(index).toBe(456);
+        });
     });
 
-    it("should parse multiple messages as array", () => {
-        const xml = `<response><Messages><Message><Index>1</Index><Phone>081234567890</Phone></Message><Message><Index>2</Index><Phone>089876543210</Phone></Message></Messages></response>`;
-        const result = parser.parse(xml);
+    describe("Contacts normalization", () => {
+        it("should normalize contact fields", () => {
+            const raw = { Tel: "+6281234567890", Name: "John Doe" };
 
-        expect(Array.isArray(result.response.Messages.Message)).toBe(true);
-        expect(result.response.Messages.Message.length).toBe(2);
+            const normalized = {
+                tel: String(raw.Tel ?? ""),
+                name: String(raw.Name ?? ""),
+            };
+
+            expect(normalized.tel).toBe("+6281234567890");
+            expect(normalized.name).toBe("John Doe");
+        });
+
+        it("should sort contacts by name", () => {
+            const contacts = [
+                { tel: "111", name: "Charlie" },
+                { tel: "222", name: "Alice" },
+                { tel: "333", name: "Bob" },
+            ];
+
+            const sorted = [...contacts].sort((a, b) => a.name.localeCompare(b.name));
+
+            expect(sorted[0]?.name).toBe("Alice");
+            expect(sorted[1]?.name).toBe("Bob");
+            expect(sorted[2]?.name).toBe("Charlie");
+        });
     });
 
-    it("should handle missing elements gracefully", () => {
-        const xml = `<response><Messages></Messages></response>`;
-        const result = parser.parse(xml);
+    describe("SMS date sorting", () => {
+        it("should sort messages by date ascending", () => {
+            const messages = [{ date: "2024-01-03 12:00:00" }, { date: "2024-01-01 12:00:00" }, { date: "2024-01-02 12:00:00" }];
 
-        expect(result.response.Messages).toBeDefined();
+            const sorted = messages.sort((a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return a.date.localeCompare(b.date);
+            });
+
+            expect(sorted[0]?.date).toBe("2024-01-01 12:00:00");
+            expect(sorted[1]?.date).toBe("2024-01-02 12:00:00");
+            expect(sorted[2]?.date).toBe("2024-01-03 12:00:00");
+        });
+
+        it("should handle missing dates", () => {
+            const messages = [{ date: "2024-01-01 12:00:00" }, { date: "" }, { date: "2024-01-02 12:00:00" }];
+
+            const sorted = messages.sort((a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return 1;
+                if (!b.date) return -1;
+                return a.date.localeCompare(b.date);
+            });
+
+            expect(sorted[0]?.date).toBe("2024-01-01 12:00:00");
+            expect(sorted[1]?.date).toBe("2024-01-02 12:00:00");
+            expect(sorted[2]?.date).toBe("");
+        });
     });
 
-    it("should parse contact list", () => {
-        const xml = `<response><Phonebook><PbItem><Tel>+6281234567890</Tel><Name>John</Name></PbItem></Phonebook></response>`;
-        const result = parser.parse(xml);
+    describe("Phone number filtering", () => {
+        it("should filter messages by phone number", () => {
+            const messages = [{ Phone: "+6281234567890" }, { Phone: "+6289876543210" }, { Phone: "+6281230000000" }];
 
-        expect(result.response.Phonebook.PbItem.Name).toBe("John");
+            const searchPhone = "8123";
+            const filtered = messages.filter((msg) => {
+                if (!searchPhone) return false;
+                const msgPhone = String(msg.Phone ?? "").replace(/\D/g, "");
+                return msgPhone.length > 0 && (msgPhone.includes(searchPhone) || searchPhone.includes(msgPhone));
+            });
+
+            expect(filtered.length).toBe(2);
+            expect(filtered[0]?.Phone).toBe("+6281234567890");
+            expect(filtered[1]?.Phone).toBe("+6281230000000");
+        });
     });
 
-    it("should parse numeric values as numbers", () => {
-        const xml = `<response><SignalIcon>5</SignalIcon><Index>123</Index></response>`;
-        const result = parser.parse(xml);
+    describe("Array normalization", () => {
+        it("should wrap single item in array", () => {
+            const single = { Name: "Test" };
+            const wrapped = Array.isArray(single) ? single : [single];
 
-        expect(result.response.SignalIcon).toBe(5);
-        expect(result.response.Index).toBe(123);
-    });
+            expect(Array.isArray(wrapped)).toBe(true);
+            expect(wrapped.length).toBe(1);
+        });
 
-    it("should preserve text content", () => {
-        const xml = `<response><Content>This is a message</Content></response>`;
-        const result = parser.parse(xml);
+        it("should keep array as array", () => {
+            const multiple = [{ Name: "Test1" }, { Name: "Test2" }];
+            const wrapped = Array.isArray(multiple) ? multiple : [multiple];
 
-        expect(result.response.Content).toBe("This is a message");
-    });
-});
-
-describe("Modem Response Handling", () => {
-    it("should parse health status response", () => {
-        const xml = `<response><SignalIcon>5</SignalIcon><CurrentNetworkType>19</CurrentNetworkType><ConnectionStatus>901</ConnectionStatus></response>`;
-        const result = parser.parse(xml);
-
-        expect(result.response.SignalIcon).toBe(5);
-        expect(result.response.CurrentNetworkType).toBe(19);
-        expect(result.response.ConnectionStatus).toBe(901);
-    });
-
-    it("should detect offline status from connection status", () => {
-        const xml = `<response><SignalIcon>1</SignalIcon><ConnectionStatus>900</ConnectionStatus></response>`;
-        const result = parser.parse(xml);
-
-        const isConnected = result.response.ConnectionStatus === 901;
-        expect(isConnected).toBe(false);
-    });
-
-    it("should handle signal strength levels", () => {
-        const levels = [1, 2, 3, 4, 5];
-
-        for (const level of levels) {
-            const result = parser.parse(`<response><SignalIcon>${level}</SignalIcon></response>`);
-            expect(result.response.SignalIcon).toBe(level);
-        }
-    });
-});
-
-describe("SMS XML Building", () => {
-    it("should build valid SMS request XML", () => {
-        const message = "Test message";
-        const xml = `<request><Index>-1</Index><Phones><Phone>+6281234567890</Phone></Phones><Content>${message}</Content><Attributes>1</Attributes><Date>-1</Date></request>`;
-
-        const result = parser.parse(xml);
-
-        expect(result.request.Index).toBe(-1);
-        expect(result.request.Content).toBe("Test message");
-        expect(result.request.Attributes).toBe(1);
-    });
-});
-
-describe("USSD XML Building", () => {
-    it("should build valid USSD request XML", () => {
-        const code = "*888#";
-        const xml = `<request><Content>${code}</Content><Type>1</Type></request>`;
-
-        const result = parser.parse(xml);
-
-        expect(result.request.Content).toBe("*888#");
-        expect(result.request.Type).toBe(1);
-    });
-});
-
-describe("Contacts XML Building", () => {
-    it("should build valid contacts request XML", () => {
-        const xml = `<request><PageIndex>1</PageIndex><ReadCount>50</ReadCount><SaveMode>0</SaveMode><SearchName></SearchName></request>`;
-
-        const result = parser.parse(xml);
-
-        expect(result.request.PageIndex).toBe(1);
-        expect(result.request.ReadCount).toBe(50);
-        expect(result.request.SaveMode).toBe(0);
-    });
-});
-
-describe("Request Validation", () => {
-    it("should validate SMS request has both to and message", () => {
-        const validateSmsRequest = (body: { to?: string; message?: string }) => {
-            return !body.to || !body.message;
-        };
-
-        expect(validateSmsRequest({ to: "081234567890", message: "Hello" })).toBe(false);
-        expect(validateSmsRequest({ to: "081234567890" })).toBe(true);
-        expect(validateSmsRequest({ message: "Hello" })).toBe(true);
-        expect(validateSmsRequest({})).toBe(true);
-    });
-
-    it("should validate USSD request has code", () => {
-        const validateUssdRequest = (body: { code?: string }) => {
-            return !body.code;
-        };
-
-        expect(validateUssdRequest({ code: "*888#" })).toBe(false);
-        expect(validateUssdRequest({})).toBe(true);
-    });
-});
-
-describe("Response Formatting", () => {
-    it("should ensure messages is always an array", () => {
-        const normalizeMessages = (messages: unknown) => {
-            return Array.isArray(messages) ? messages : [messages];
-        };
-
-        const singleMessage = { Index: 1, Phone: "081234567890", Content: "Test" };
-        const multipleMessages = [
-            { Index: 1, Phone: "081234567890", Content: "Test1" },
-            { Index: 2, Phone: "089876543210", Content: "Test2" },
-        ];
-
-        expect(Array.isArray(normalizeMessages(singleMessage))).toBe(true);
-        expect(normalizeMessages(singleMessage).length).toBe(1);
-        expect(Array.isArray(normalizeMessages(multipleMessages))).toBe(true);
-        expect(normalizeMessages(multipleMessages).length).toBe(2);
+            expect(wrapped.length).toBe(2);
+        });
     });
 });

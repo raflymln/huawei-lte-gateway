@@ -5,7 +5,7 @@
 | Item      | Value                        |
 | --------- | ---------------------------- |
 | Runtime   | Bun 1.x                      |
-| Framework | Hono                         |
+| Framework | ElysiaJS                     |
 | Language  | TypeScript 6                 |
 | Container | Podman/Docker (ARM64, AMD64) |
 | License   | MPL-2.0                      |
@@ -22,14 +22,24 @@ bun run format      # Format
 
 ## Files
 
-| File                 | Purpose                 |
-| -------------------- | ----------------------- |
-| `src/main.ts`        | Main application        |
-| `src/__tests__/`     | Unit tests              |
-| `Dockerfile`         | Container build         |
-| `docker-compose.yml` | Container orchestration |
-| `package.json`       | Dependencies & scripts  |
-| `tsconfig.json`      | TypeScript config       |
+| File                              | Purpose                            |
+| --------------------------------- | ---------------------------------- |
+| `src/app.ts`                      | Main application entry point       |
+| `src/lib/`                        | Core utilities                     |
+| `src/lib/utils.ts`                | Shared helpers (auth, XML parsing) |
+| `src/controllers/`                | Controller directory               |
+| `src/controllers/public.ts`       | Public routes (health)             |
+| `src/controllers/api/`            | API controller directory           |
+| `src/controllers/api/index.ts`    | API aggregator                     |
+| `src/controllers/api/sms.ts`      | SMS endpoints                      |
+| `src/controllers/api/ussd.ts`     | USSD endpoints                     |
+| `src/controllers/api/contacts.ts` | Contacts endpoints                 |
+| `src/types.d.ts`                  | Environment type definitions       |
+| `src/__tests__/`                  | Unit tests                         |
+| `Dockerfile`                      | Container build                    |
+| `docker-compose.yml`              | Container orchestration            |
+| `package.json`                    | Dependencies & scripts             |
+| `tsconfig.json`                   | TypeScript config                  |
 
 ## Code Style
 
@@ -37,6 +47,22 @@ bun run format      # Format
 - TypeScript strict mode
 - ESLint + Prettier via lefthook
 - Conventional commits
+- Use `@/` alias for internal imports
+- Import order: internal → external → builtin
+
+## Architecture
+
+```
+Request → ElysiaJS → Controllers → Modem API
+```
+
+Controllers are Elysia instances with `prefix` and `tags`:
+
+```typescript
+export const Controller = new Elysia({ prefix: "/path", tags: ["Tag"] })
+    .post("/action", handler, { body: Schema, detail: {...} })
+    .get("/list", handler);
+```
 
 ## Environment
 

@@ -17,7 +17,7 @@
     ],
     "scripts": {
         "dev": "bun run build && bun run start",
-        "start": "bun run dist/main.js",
+        "start": "bun run dist/app.js",
         "build": "tsc",
         "typecheck": "tsc --noEmit",
         "lint": "eslint . --ext .ts",
@@ -31,10 +31,12 @@
         "bun": ">=1.0.0"
     },
     "dependencies": {
-        "@hono/node-server": "^1.19.12",
+        "@elysiajs/cors": "^1.4.1",
+        "@elysiajs/openapi": "^1.4.14",
+        "elysia": "^1.4.28",
         "eslint-plugin-no-relative-import-paths": "^1.6.1",
         "fast-xml-parser": "^5.5.10",
-        "hono": "^4.12.10"
+        "zod": "^4.3.6"
     },
     "devDependencies": {
         "@commitlint/cli": "^20.5.0",
