@@ -1,57 +1,108 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'tsconfig.json'
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths:
+            - "src/**"
+            - "package.json"
+            - "tsconfig.json"
+            - "Dockerfile"
+            - "compose.yml"
+    workflow_dispatch:
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
+    release:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v1
+              with:
+                  bun-version: latest
 
-      - name: Install dependencies
-        run: bun install
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
 
-      - name: Build project
-        run: bun run build
+            - name: Type check
+              run: bun run typecheck
 
-      - name: Commit and tag release
-        run: |
-          VERSION=$(jq -r '.version' package.json)
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git commit -m "chore(release): release version $VERSION" -a || true
-          git tag -a "v$VERSION" -m "Release version $VERSION"
-          git push origin "v$VERSION"
+            - name: Lint
+              run: bun run lint
 
-      - name: Publish to GitHub Releases
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "dist/**"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          allowUpdates: true
-          generateReleaseNotes: true
-          tag: "v${{ github.ref }}"
-          body: |
-            ### Release Notes
-            
-            Build compiled from: ${{ github.sha }}
-            
-            ### Changelog
-            ${{ steps.generate_release_notes.outputs.changelog }}
+            - name: Build project
+              run: bun run build
+
+            - name: Log in to Container Registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract metadata
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                  tags: |
+                      type=sha,prefix=,suffix=,format=short
+                      type=semver,pattern={{version}}
+                      type=semver,pattern={{major}}.{{minor}}
+                      type=raw,value=latest,enable={{is_default_branch}}
+
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  platforms: linux/amd64,linux/arm64/v8
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+
+            - name: Create or update release
+              run: |
+                  VERSION=$(jq -r '.version' package.json)
+                  git config user.name "github-actions"
+                  git config user.email "github-actions@github.com"
+                  git tag -a "v$VERSION" -m "Release version $VERSION" || git tag -d "v$VERSION" && git tag -a "v$VERSION" -m "Release version $VERSION"
+                  git push origin "v$VERSION"
+
+            - name: Publish GitHub Release
+              uses: ncipollo/release-action@v1
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  generateReleaseNotes: true
+                  tag: "v${{ github.run_number }}"
+                  name: "Release v${{ github.run_number }}"
+                  body: |
+                      ## Docker Images
+
+                      Available images:
+                      - `ghcr.io/${{ github.repository }}:latest` (latest release)
+                      - `ghcr.io/${{ github.repository }}:${{ github.sha }}` (commit SHA)
+
+                      ### Example compose
+
+                      ```yaml
+                      services:
+                          gateway:
+                              image: ghcr.io/${{ github.repository }}:latest
+                              environment:
+                                  - PORT=3000
+                                  - MODEM_URL=http://192.168.8.1/api
+                              ports:
+                                  - "3000:3000"
+                      ```
