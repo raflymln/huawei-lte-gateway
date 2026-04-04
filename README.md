@@ -73,15 +73,14 @@ All requests (except `/health/`) require session and token authentication, autom
 
 ### Endpoints
 
-| Method | Endpoint                | Description                       |
-| ------ | ----------------------- | --------------------------------- |
-| GET    | `/health/`              | Check modem status and signal     |
-| POST   | `/api/sms/send/`        | Send SMS (`{ to, message }`)      |
-| GET    | `/api/sms/inbox/`       | Get latest SMS messages           |
-| POST   | `/api/sms/inbox/`       | Delete SMS by index (`{ index }`) |
-| GET    | `/api/sms/inbox/:phone` | Get SMS by phone number           |
-| POST   | `/api/ussd/`            | Send USSD code (`{ code }`)       |
-| GET    | `/api/contacts/`        | Get SIM card contacts             |
+| Method | Endpoint                | Description                   |
+| ------ | ----------------------- | ----------------------------- |
+| GET    | `/health/`              | Check modem status and signal |
+| POST   | `/api/sms/send/`        | Send SMS (`{ to, message }`)  |
+| GET    | `/api/sms/inbox/`       | Get inbox & outbox SMS        |
+| GET    | `/api/sms/inbox/:phone` | Get SMS by phone number       |
+| POST   | `/api/ussd/`            | Send USSD code (`{ code }`)   |
+| GET    | `/api/contacts/`        | Get SIM card contacts         |
 
 ## Contributing
 
