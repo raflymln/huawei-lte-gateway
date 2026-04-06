@@ -1,6 +1,6 @@
 {
     "name": "@raflymln/huawei-lte-gateway",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "type": "module",
     "private": true,
     "description": "Service gateway for interacting with Huawei LTE Modem web API endpoints",
