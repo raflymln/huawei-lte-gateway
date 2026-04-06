@@ -5,11 +5,7 @@ on:
         branches:
             - main
         paths:
-            - "src/**"
             - "package.json"
-            - "tsconfig.json"
-            - "Dockerfile"
-            - "docker-compose.yml"
     workflow_dispatch:
 
 env:
@@ -26,82 +22,61 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v6
-
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: "1.3.5"
+                  fetch-depth: 2
 
-            - name: Install dependencies
-              run: bun install
+            - name: Check if version changed
+              id: version
+              run: |
+                  if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+                      echo "changed=true" >> $GITHUB_OUTPUT
+                      echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
+                      exit 0
+                  fi
 
-            - name: Type check
-              run: bun run typecheck
+                  PREV=$(git show HEAD~1:package.json | jq -r '.version')
+                  CURR=$(jq -r '.version' package.json)
 
-            - name: Lint
-              run: bun run lint
+                  if [ "$PREV" != "$CURR" ]; then
+                      echo "changed=true" >> $GITHUB_OUTPUT
+                      echo "version=$CURR" >> $GITHUB_OUTPUT
+                  else
+                      echo "changed=false" >> $GITHUB_OUTPUT
+                  fi
 
-            - name: Build project
-              run: bun run build
+            - name: Set up QEMU
+              if: steps.version.outputs.changed == 'true'
+              uses: docker/setup-qemu-action@v3
+
+            - name: Set up Docker Buildx
+              if: steps.version.outputs.changed == 'true'
+              uses: docker/setup-buildx-action@v3
 
             - name: Log in to Container Registry
+              if: steps.version.outputs.changed == 'true'
               uses: docker/login-action@v4
               with:
                   registry: ${{ env.REGISTRY }}
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Extract metadata
-              id: meta
-              uses: docker/metadata-action@v5
-              with:
-                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-                  tags: |
-                      type=sha,prefix=,suffix=,format=short
-                      type=semver,pattern={{version}}
-                      type=semver,pattern={{major}}.{{minor}}
-                      type=raw,value=latest,enable={{is_default_branch}}
-
             - name: Build and push
+              if: steps.version.outputs.changed == 'true'
               uses: docker/build-push-action@v7
               with:
                   context: .
                   push: true
-                  tags: ${{ steps.meta.outputs.tags }}
-                  platforms: linux/amd64
+                  tags: |
+                      ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+                      ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+                  platforms: linux/amd64,linux/arm64
 
-            - name: Create or update release
-              run: |
-                  VERSION=$(jq -r '.version' package.json)
-                  git config user.name "github-actions"
-                  git config user.email "github-actions@github.com"
-                  git tag -d "v$VERSION" 2>/dev/null || true
-                  git push origin :refs/tags "v$VERSION" 2>/dev/null || true
-                  git tag -a "v$VERSION" -m "Release version $VERSION"
-                  git push origin "v$VERSION" --force
-
-            - name: Publish GitHub Release
+            - name: Create GitHub Release
+              if: steps.version.outputs.changed == 'true'
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  VERSION=$(jq -r '.version' package.json)
-                  gh release create "v$VERSION" --generate-notes --title "Release v$VERSION"
-                  body: |
-                      ## Docker Images
-
-                      Available images:
-                      - `ghcr.io/${{ github.repository }}:latest` (latest release)
-                      - `ghcr.io/${{ github.repository }}:${{ github.sha }}` (commit SHA)
-
-                      ### Example compose
-
-                      ```yaml
-                      services:
-                          gateway:
-                              image: ghcr.io/${{ github.repository }}:latest
-                              environment:
-                                  - PORT=3000
-                                  - MODEM_URL=http://192.168.8.1/api
-                              ports:
-                                  - "3000:3000"
-                      ```
+                  VERSION="${{ steps.version.outputs.version }}"
+                  gh release create "$VERSION" \
+                      --generate-notes \
+                      --title "Release $VERSION"
