@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.22
 
-FROM docker.io/oven/bun:1.3.10 AS base-dev
+FROM docker.io/oven/bun:1.3.12 AS base-dev
 
 # Set working directory
 WORKDIR /tmp/build
