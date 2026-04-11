@@ -20,7 +20,7 @@ RUN apt-get update \
 # Install static Git
 COPY --from=ghcr.io/hazmi35/git-static:2.53.0 /usr/local/bin/git /usr/local/bin/git
 
-FROM docker.io/library/debian:13.3-slim AS base-prod
+FROM docker.io/library/debian:13.4-slim AS base-prod
 
 # Set working directory
 WORKDIR /usr/local/lib/huawei-lte-gateway
